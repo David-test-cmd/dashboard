@@ -15,30 +15,40 @@
     color: #e6edf3;
     font-family: "Roboto", Arial, sans-serif;
   }
-  /* ponytail: Firefox 68 ukusuje listu z vh, proto rezerva 56px */
+  /* ponytail: 100% misto vh - Lightning/Firefox hlasily spatnou vysku */
   #page {
     position: absolute;
-    top: 0; left: 0; right: 0;
-    height: calc(100% - 56px);
+    top: 0; left: 0; right: 0; bottom: 0;
     display: flex;
     flex-direction: column;
   }
   #wrap { display: flex; flex: 1 1 auto; min-height: 0; }
   #cal {
-    flex: 0 0 38%;
+    flex: 0 0 34%;
     min-height: 0;
     border-top: 2px solid #21262d;
     padding: 6px 10px 10px;
   }
+  #quote {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: #161b22;
+    border-left: 3px solid #58a6ff;
+    border-radius: 6px;
+  }
+  #quote .q { font-size: 16px; font-style: italic; line-height: 1.4; color: #c9d1d9; }
+  #quote .a { font-size: 13px; color: #58a6ff; margin-top: 6px; text-align: right; }
   #cal iframe {
     width: 100%; height: 100%; border: 0; border-radius: 6px;
     /* ponytail: inverze barev, Google Calendar embed dark mode neumi */
     filter: invert(0.92) hue-rotate(180deg);
   }
 
-  /* LEVY SLOUPEC - hodiny, pocasi */
+  /* LEVY SLOUPEC - hodiny, pocasi, citat */
   #left {
-    width: 38%;
+    flex: 0 0 38%;
+    min-width: 0;
+    overflow: hidden;
     padding: 18px;
     display: flex;
     flex-direction: column;
@@ -103,7 +113,8 @@
 
   /* PRAVY SLOUPEC - zpravy */
   #right {
-    width: 62%;
+    flex: 1 1 auto;
+    min-width: 0;
     padding: 16px;
     overflow: hidden;
   }
@@ -156,6 +167,7 @@
       <div id="wdesc">pocasi se nacita</div>
       <div id="wforecast"></div>
     </div>
+    <div id="quote"><div class="q"></div><div class="a"></div></div>
   </div>
   <div id="right">
     <div id="rhead">Zpravy &mdash; <span class="src">CT24 + iRozhlas</span></div>
@@ -163,7 +175,7 @@
   </div>
 </div>
 <div id="cal">
-  <iframe src="https://calendar.google.com/calendar/embed?src=bulinci.foto%40gmail.com&ctz=Europe%2FPrague&mode=DAY&showTitle=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0" scrolling="no"></iframe>
+  <iframe src="https://calendar.google.com/calendar/embed?src=bulinci.foto%40gmail.com&ctz=Europe%2FPrague&mode=WEEK&showTitle=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0" scrolling="no"></iframe>
 </div>
 </div>
 <div id="status">--</div>
@@ -203,14 +215,55 @@ function tick() {
 tick();
 setInterval(tick, 10000);
 
-// ponytail: Firefox 68 na KitKatu spatne hlasi vh - merime okno rucne
+// ---------- CITAT DNE ----------
+// ponytail: 30 citatu, index = den v roce % 30. Staci, meni se kazdy den.
+var QUOTES = [
+  ["Jedinej clovek, kterej nikdy neudela chybu, je ten, kterej nic nedela.", "Theodore Roosevelt"],
+  ["Zivot je to, co se ti deje, zatimco si delas jiny plany.", "John Lennon"],
+  ["Nezalezi na tom, jak pomalu jdes, dokud se nezastavis.", "Konfucius"],
+  ["Nejlepsi cas zasadit strom byl pred dvaceti lety. Druhej nejlepsi je ted.", "Cinske prislovi"],
+  ["Uspech je schopnost jit od neuspechu k neuspechu, aniz bys ztratil nadseni.", "Winston Churchill"],
+  ["Bud zmenou, kterou chces videt ve svete.", "Mahatma Gandhi"],
+  ["Vsechno, co jsi kdy chtel, je na druhe strane strachu.", "George Addair"],
+  ["Stastny clovek nema vsechno nejlepsi, ale vytezi ze vseho, co ma.", "Neznamy"],
+  ["Necekej na spravnou chvili. Vezmi chvili a udelej ji spravnou.", "Neznamy"],
+  ["Cesta tisice mil zacina jednim krokem.", "Lao-c"],
+  ["Kdo chce, hleda zpusob. Kdo nechce, hleda duvod.", "Neznamy"],
+  ["Nejvetsi slava neni v tom nikdy nepadnout, ale v tom vzdy vstat.", "Konfucius"],
+  ["Tajemstvi zmeny je soustredit vsechnu energii ne na boj se starym, ale na budovani noveho.", "Sokrates"],
+  ["Clovek je tak stastny, jak umi byt.", "Abraham Lincoln"],
+  ["Nadeje neni predpoved, je to schopnost pracovat pro neco lepsiho.", "Neznamy"],
+  ["Nemusis byt skvelej, abys zacal. Ale musis zacit, abys byl skvelej.", "Zig Ziglar"],
+  ["Kazdy den je nova sance zmenit svuj zivot.", "Neznamy"],
+  ["Silnejsi nez vsechno na svete je ticho, ktere nasleduje po dobre odpovedi.", "Neznamy"],
+  ["Cas, ktery si uzijes, neni cas ztraceny.", "John Lennon"],
+  ["Nejlepsi odplata za krivdu je nebyt jako ten, kdo ji udelal.", "Marcus Aurelius"],
+  ["Nezlob se, ze nemuzes zmenit minulost. Zmen pritomnost.", "Neznamy"],
+  ["Mysli pozitivne, protoze tve myslenky se stvavaji tvym zivotem.", "Neznamy"],
+  ["Jen ten, kdo riskuje, muze ziskat vse.", "Neznamy"],
+  ["Vzdelani je nejmocnejsi zbran, kterou muzes zmenit svet.", "Nelson Mandela"],
+  ["Zivot zacina na konci tve komfortni zony.", "Neznamy"],
+  ["Nekdy je prohra to nejlepsi, co se ti muze stat.", "Neznamy"],
+  ["Delej maly veci s velkou laskou.", "Matka Tereza"],
+  ["Kdo se boji, nesmi do lesa.", "Ceske prislovi"],
+  ["Trpelivost je strom, jehoz koren je horky, ale plod sladky.", "Nemecke prislovi"],
+  ["Rano moudry, vecer blazen.", "Ceske prislovi"]
+];
+
+function showQuote() {
+  var d = new Date();
+  var dayOfYear = Math.floor((d - new Date(d.getFullYear(),0,0)) / 86400000);
+  var q = QUOTES[dayOfYear % QUOTES.length];
+  document.querySelector("#quote .q").innerHTML = "&bdquo;" + q[0] + "&ldquo;";
+  document.querySelector("#quote .a").innerHTML = "&mdash; " + q[1];
+}
+showQuote();
+
+
+// ponytail: Firefox 68 na KitKatu spatne hlasi vysku - merime okno rucne
 function fit() {
   var h = window.innerHeight || document.documentElement.clientHeight || 768;
-  // rezerva na listu, dokud se stranka nevejde presne
-  var target = h - 56;
-  if (h >= 760) target = h - 56;   // landscape 768 - lista
-  else target = h - 8;
-  document.getElementById("page").style.height = target + "px";
+  document.getElementById("page").style.height = h + "px";
 }
 fit();
 window.addEventListener("resize", fit);
