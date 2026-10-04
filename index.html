@@ -291,7 +291,7 @@ function loadCal() {
     try { renderCal(JSON.parse(x.responseText)); }
     catch(e) { document.getElementById("calevents").innerHTML = '<li class="cday">chyba kalendare</li>'; }
   };
-  x.open("GET", "events.json?t=" + new Date().getTime(), true);
+  x.open("GET", "https://david-test-cmd.github.io/dashboard/events.json?t=" + new Date().getTime(), true);
   x.send();
 }
 
