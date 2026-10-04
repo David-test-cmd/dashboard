@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #0d1117;
+    color: #e6edf3;
+    font-family: "Roboto", Arial, sans-serif;
+  }
+  /* ponytail: Firefox 68 ukusuje listu z vh, proto rezerva 56px */
+  #page {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: calc(100% - 56px);
+    display: flex;
+    flex-direction: column;
+  }
+  #wrap { display: flex; flex: 1 1 auto; min-height: 0; }
+  #cal {
+    flex: 0 0 38%;
+    min-height: 0;
+    border-top: 2px solid #21262d;
+    padding: 6px 10px 10px;
+  }
+  #cal iframe {
+    width: 100%; height: 100%; border: 0; border-radius: 6px;
+    /* ponytail: inverze barev, Google Calendar embed dark mode neumi */
+    filter: invert(0.92) hue-rotate(180deg);
+  }
+
+  /* LEVY SLOUPEC - hodiny, pocasi */
+  #left {
+    width: 38%;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    border-right: 2px solid #21262d;
+  }
+  #clock {
+    font-size: 68px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    line-height: 1;
+    color: #58a6ff;
+  }
+  #date {
+    font-size: 20px;
+    color: #8b949e;
+    margin-top: 6px;
+    text-transform: capitalize;
+  }
+  #weather {
+    margin-top: 22px;
+    flex: 1;
+  }
+  #wnow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  #wtemp {
+    font-size: 58px;
+    font-weight: 700;
+    color: #f0f6fc;
+  }
+  #wicon { font-size: 52px; }
+  #wcity {
+    font-size: 15px;
+    color: #58a6ff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  #wdesc {
+    font-size: 18px;
+    color: #8b949e;
+    margin-top: 4px;
+  }
+  #wforecast {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+  }
+  .fday {
+    flex: 1;
+    background: #161b22;
+    border-radius: 8px;
+    padding: 10px 6px;
+    text-align: center;
+  }
+  .fday .n { font-size: 13px; color: #8b949e; }
+  .fday .i { font-size: 26px; margin: 4px 0; }
+  .fday .t { font-size: 15px; font-weight: 600; }
+  .fday .t .lo { color: #6e7681; font-weight: 400; }
+
+  /* PRAVY SLOUPEC - zpravy */
+  #right {
+    width: 62%;
+    padding: 16px;
+    overflow: hidden;
+  }
+  #rhead {
+    font-size: 15px;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #21262d;
+    margin-bottom: 10px;
+  }
+  .src { color: #58a6ff; font-weight: 700; }
+  #news { list-style: none; }
+  #news li {
+    padding: 9px 0;
+    border-bottom: 1px solid #161b22;
+  }
+  #news .hl {
+    font-size: 19px;
+    line-height: 1.25;
+    color: #f0f6fc;
+  }
+  #news .meta {
+    font-size: 12px;
+    color: #6e7681;
+    margin-top: 3px;
+  }
+  #news .meta .tag { color: #7ee787; }
+  #status {
+    position: fixed;
+    bottom: 4px; right: 8px;
+    font-size: 11px;
+    color: #484f58;
+  }
+</style>
+</head>
+<body>
+<div id="page">
+<div id="wrap">
+  <div id="left">
+    <div id="clock">--:--</div>
+    <div id="date">nacteni...</div>
+    <div id="weather">
+      <div id="wcity">Velesovice</div>
+      <div id="wnow">
+        <div id="wicon">--</div>
+        <div id="wtemp">--&deg;</div>
+      </div>
+      <div id="wdesc">pocasi se nacita</div>
+      <div id="wforecast"></div>
+    </div>
+  </div>
+  <div id="right">
+    <div id="rhead">Zpravy &mdash; <span class="src">CT24 + iRozhlas</span></div>
+    <ul id="news"><li><span class="hl">Nacitam zpravy...</span></li></ul>
+  </div>
+</div>
+<div id="cal">
+  <iframe src="https://calendar.google.com/calendar/embed?src=bulinci.foto%40gmail.com&ctz=Europe%2FPrague&mode=DAY&showTitle=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0" scrolling="no"></iframe>
+</div>
+</div>
+<div id="status">--</div>
+
+<script>
+// ---------- NASTAVENI ----------
+var LAT = 49.177, LON = 16.849;   // Velesovice (okres Vyskov)
+var CITY = "Velesovice";
+var NEWS_REFRESH_MIN = 15;       // obnoveni zprav (minuty)
+var WEATHER_REFRESH_MIN = 15;    // obnoveni pocasi
+// ------------------------------
+
+var DNAMES = ["nedele","pondeli","utery","streda","ctvrtek","patek","sobota"];
+var MNAMES = ["ledna","unora","brezna","dubna","kvetna","cervna","cervence","srpna","zari","rijna","listopadu","prosince"];
+
+// WMO weather code -> ikona + popis
+function wmo(c) {
+  var m = {
+    0:["☀️","Jasno"], 1:["🌤️","Skoro jasno"], 2:["⛅","Polojasno"],
+    3:["☁️","Zatazeno"], 45:["🌫️","Mlha"], 48:["🌫️","Mlha"],
+    51:["🌦️","Slabe mrholeni"], 53:["🌦️","Mrholeni"], 55:["🌦️","Silne mrholeni"],
+    61:["🌧️","Slaby dest"], 63:["🌧️","Dest"], 65:["🌧️","Silny dest"],
+    71:["🌨️","Slabe snezeni"], 73:["🌨️","Snezeni"], 75:["❄️","Silne snezeni"],
+    80:["🌦️","Prehanky"], 81:["🌧️","Prehanky"], 82:["⛈️","Silne prehanky"],
+    95:["⛈️","Bourka"], 96:["⛈️","Bourka s krupobitim"], 99:["⛈️","Silna bourka"]
+  };
+  return m[c] || ["☁️","?"];
+}
+
+function pad(n){ return (n<10?"0":"")+n; }
+
+function tick() {
+  var d = new Date();
+  document.getElementById("clock").innerHTML = pad(d.getHours())+":"+pad(d.getMinutes());
+  document.getElementById("date").innerHTML = DNAMES[d.getDay()]+" "+d.getDate()+". "+MNAMES[d.getMonth()]+" "+d.getFullYear();
+}
+tick();
+setInterval(tick, 10000);
+
+// ponytail: Firefox 68 na KitKatu spatne hlasi vh - merime okno rucne
+function fit() {
+  var h = window.innerHeight || document.documentElement.clientHeight || 768;
+  // rezerva na listu, dokud se stranka nevejde presne
+  var target = h - 56;
+  if (h >= 760) target = h - 56;   // landscape 768 - lista
+  else target = h - 8;
+  document.getElementById("page").style.height = target + "px";
+}
+fit();
+window.addEventListener("resize", fit);
+window.addEventListener("orientationchange", fit);
+setTimeout(fit, 500);
+setTimeout(fit, 1500);
+setTimeout(fit, 3000);
+
+function setStatus(s) { document.getElementById("status").innerHTML = s + " | " + new Date().toLocaleTimeString(); }
+
+// ---------- POCASI ----------
+function loadWeather() {
+  var url = "https://api.open-meteo.com/v1/forecast?latitude="+LAT+"&longitude="+LON+
+    "&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m"+
+    "&daily=weather_code,temperature_2m_max,temperature_2m_min"+
+    "&timezone=Europe/Prague&forecast_days=4";
+  var x = new XMLHttpRequest();
+  x.onreadystatechange = function() {
+    if (x.readyState != 4) return;
+    if (x.status != 200) { setStatus("pocasi: chyba "+x.status); return; }
+    try { renderWeather(JSON.parse(x.responseText)); }
+    catch(e) { setStatus("pocasi: parse err"); }
+  };
+  x.open("GET", url, true);
+  x.send();
+}
+
+function renderWeather(d) {
+  var c = d.current, w = wmo(c.weather_code);
+  document.getElementById("wicon").innerHTML = w[0];
+  document.getElementById("wtemp").innerHTML = Math.round(c.temperature_2m)+"&deg;";
+  document.getElementById("wdesc").innerHTML = w[1]+" &middot; vlhkost "+c.relative_humidity_2m+
+    "% &middot; vitr "+Math.round(c.wind_speed_10m)+" km/h";
+
+  var html = "", dd = d.daily;
+  for (var i = 1; i < dd.time.length && i <= 3; i++) {
+    var dt = new Date(dd.time[i]+"T12:00:00");
+    var wn = wmo(dd.weather_code[i]);
+    html += '<div class="fday"><div class="n">'+DNAMES[dt.getDay()].substring(0,2)+'</div>'+
+      '<div class="i">'+wn[0]+'</div><div class="t">'+Math.round(dd.temperature_2m_max[i])+
+      '&deg; <span class="lo">'+Math.round(dd.temperature_2m_min[i])+'&deg;</span></div></div>';
+  }
+  document.getElementById("wforecast").innerHTML = html;
+  setStatus("pocasi OK");
+}
+
+// ---------- ZPRAVY ----------
+// Jen zdroje s CORS (access-control-allow-origin: *)
+var FEEDS = [
+  { name: "CT24",     url: "https://ct24.ceskatelevize.cz/rss/hlavni-zpravy" },
+  { name: "iRozhlas", url: "https://www.irozhlas.cz/rss/irozhlas" }
+];
+var allNews = [];
+var feedsDone = 0;
+
+function loadNews() {
+  allNews = []; feedsDone = 0;
+  for (var i = 0; i < FEEDS.length; i++) fetchFeed(FEEDS[i]);
+}
+
+function fetchFeed(f) {
+  var x = new XMLHttpRequest();
+  x.onreadystatechange = function() {
+    if (x.readyState != 4) return;
+    if (x.status == 200) parseFeed(f.name, x.responseText);
+    feedsDone++;
+    if (feedsDone >= FEEDS.length) renderNews();
+  };
+  x.open("GET", f.url, true);
+  x.send();
+}
+
+function clean(s) {
+  return s.replace(/<!\[CDATA\[|\]\]>/g,"").replace(/<[^>]*>/g,"")
+          .replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/&#39;/g,"'")
+          .replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&nbsp;/g," ").replace(/\s+/g," ").trim();
+}
+
+function parseFeed(srcName, xml) {
+  var items = xml.split("<item>");
+  for (var i = 1; i < items.length && i <= 8; i++) {
+    var it = items[i];
+    var tm = it.match(/<title>([\s\S]*?)<\/title>/);
+    var pm = it.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+    if (!tm) continue;
+    var title = clean(tm[1]);
+    if (!title) continue;
+    var when = "";
+    if (pm) {
+      var d = new Date(pm[1]);
+      if (!isNaN(d.getTime())) {
+        var mins = Math.round((new Date() - d) / 60000);
+        if (mins < 60) when = mins+" min";
+        else if (mins < 1440) when = Math.round(mins/60)+" h";
+        else when = Math.round(mins/1440)+" d";
+      }
+    }
+    allNews.push({ t: title, s: srcName, w: when, ts: pm ? new Date(pm[1]).getTime() : 0 });
+  }
+}
+
+function renderNews() {
+  allNews.sort(function(a,b){ return b.ts - a.ts; });
+  var html = "";
+  for (var i = 0; i < allNews.length && i < 14; i++) {
+    var n = allNews[i];
+    html += '<li><div class="hl">'+n.t+'</div><div class="meta"><span class="tag">'+n.s+
+            '</span>'+(n.w ? ' &middot; '+n.w : '')+'</div></li>';
+  }
+  document.getElementById("news").innerHTML = html || '<li><span class="hl">Zadne zpravy</span></li>';
+  setStatus("zpravy OK ("+allNews.length+")");
+}
+
+// ---------- START ----------
+loadWeather();
+loadNews();
+setInterval(loadWeather, WEATHER_REFRESH_MIN * 60 * 1000);
+setInterval(loadNews, NEWS_REFRESH_MIN * 60 * 1000);
+</script>
+</body>
+</html>
