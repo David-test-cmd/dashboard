@@ -7,5 +7,14 @@
   "endtime": "18:00",
   "title": "Schody",
   "loc": ""
+ },
+ {
+  "date": "2026-10-04",
+  "end": "2026-10-04",
+  "allday": false,
+  "time": "18:30",
+  "endtime": "19:30",
+  "title": "Nachystat školu Kuba",
+  "loc": ""
  }
 ]
