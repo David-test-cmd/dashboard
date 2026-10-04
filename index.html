@@ -38,11 +38,30 @@
   }
   #quote .q { font-size: 16px; font-style: italic; line-height: 1.4; color: #c9d1d9; }
   #quote .a { font-size: 13px; color: #58a6ff; margin-top: 6px; text-align: right; }
-  #cal iframe {
-    width: 100%; height: 100%; border: 0; border-radius: 6px;
-    /* ponytail: inverze barev, Google Calendar embed dark mode neumi */
-    filter: invert(0.92) hue-rotate(180deg);
+  #calhead {
+    font-size: 13px;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
   }
+  #calevents { list-style: none; height: calc(100% - 24px); overflow: hidden; }
+  #calevents .cday {
+    font-size: 13px;
+    color: #58a6ff;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 7px 0 3px;
+  }
+  #calevents li.ev {
+    font-size: 16px;
+    color: #f0f6fc;
+    padding: 2px 0;
+    line-height: 1.25;
+  }
+  #calevents li.ev .t { color: #7ee787; font-weight: 700; }
+  #calevents li.ev .past { color: #6e7681; }
 
   /* LEVY SLOUPEC - hodiny, pocasi, citat */
   #left {
@@ -175,7 +194,8 @@
   </div>
 </div>
 <div id="cal">
-  <iframe src="https://calendar.google.com/calendar/embed?src=bulinci.foto%40gmail.com&ctz=Europe%2FPrague&mode=WEEK&showTitle=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0" scrolling="no"></iframe>
+  <div id="calhead">Kalendar &mdash; nejblizsi udalosti</div>
+  <ul id="calevents"><li class="cday">Nacitam kalendar...</li></ul>
 </div>
 </div>
 <div id="status">--</div>
@@ -259,6 +279,44 @@ function showQuote() {
 }
 showQuote();
 
+// ---------- KALENDAR (events.json z GitHub Action) ----------
+function loadCal() {
+  var x = new XMLHttpRequest();
+  x.onreadystatechange = function() {
+    if (x.readyState != 4) return;
+    if (x.status != 200) {
+      document.getElementById("calevents").innerHTML = '<li class="cday">kalendar nedostupny</li>';
+      return;
+    }
+    try { renderCal(JSON.parse(x.responseText)); }
+    catch(e) { document.getElementById("calevents").innerHTML = '<li class="cday">chyba kalendare</li>'; }
+  };
+  x.open("GET", "events.json?t=" + new Date().getTime(), true);
+  x.send();
+}
+
+function renderCal(evs) {
+  var el = document.getElementById("calevents");
+  if (!evs.length) { el.innerHTML = '<li class="cday">zadne udalosti</li>'; return; }
+  var now = new Date();
+  var todayISO = now.getFullYear() + "-" + pad(now.getMonth()+1) + "-" + pad(now.getDate());
+  var html = "", lastDate = "";
+  for (var i = 0; i < evs.length && i < 12; i++) {
+    var e = evs[i];
+    if (e.date != lastDate) {
+      lastDate = e.date;
+      var dt = new Date(e.date + "T12:00:00");
+      var lbl = (e.date == todayISO) ? "Dnes" : DNAMES[dt.getDay()] + " " + dt.getDate() + ".";
+      html += '<li class="cday">' + lbl + '</li>';
+    }
+    var t = e.time ? '<span class="t">' + e.time + '</span> ' : "";
+    html += '<li class="ev">' + t + e.title + '</li>';
+  }
+  el.innerHTML = html;
+}
+
+loadCal();
+setInterval(loadCal, 60 * 60 * 1000);
 
 // ponytail: Firefox 68 na KitKatu spatne hlasi vysku - merime okno rucne
 function fit() {

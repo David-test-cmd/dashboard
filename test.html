@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>test</title></head>
+<body style="background:#111;color:#0f0;font-family:monospace;font-size:20px">
+<div id="out">cekam...</div>
+<script>
+var x = new XMLHttpRequest();
+x.onreadystatechange = function() {
+  if (x.readyState == 4) {
+    document.getElementById('out').innerHTML = 'status=' + x.status + '<br>delka=' + x.responseText.length;
+  }
+};
+x.open('GET', 'https://api.open-meteo.com/v1/forecast?latitude=50.08&longitude=14.44&current=temperature_2m', true);
+x.send();
+</script>
+</body></html>

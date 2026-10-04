@@ -1,0 +1,26 @@
+name: Kalendar
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"   # kazde 3 hodiny
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stahni a preved iCal
+        env:
+          ICAL_URL: ${{ secrets.ICAL_URL }}
+        run: python3 fetch_cal.py
+      - name: Commit events.json
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add events.json
+          git diff --staged --quiet || git commit -m "Kalendar: aktualizace"
+          git push

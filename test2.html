@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>test2</title></head>
+<body style="background:#111;color:#0f0;font-family:monospace;font-size:18px;padding:20px">
+<div id="out">start...</div>
+<script>
+var log = [];
+function p(s){ log.push(s); document.getElementById('out').innerHTML = log.join('<br>'); }
+p('JS bezi, Chrome: ' + navigator.userAgent);
+
+// test 1: XHR na stejny origin (file) - melo by fungovat
+var x1 = new XMLHttpRequest();
+x1.onreadystatechange = function(){
+  if(x1.readyState==4){ p('XHR file: status=' + x1.status + ' len=' + x1.responseText.length); }
+};
+try { x1.open('GET','test2.html',true); x1.send(); } catch(e){ p('XHR file ERROR: '+e); }
+
+// test 2: XHR na https
+var x2 = new XMLHttpRequest();
+x2.onreadystatechange = function(){
+  if(x2.readyState==4){ p('XHR https: status=' + x2.status + ' len=' + (x2.responseText||'').length); }
+};
+try { x2.open('GET','https://api.open-meteo.com/v1/forecast?latitude=50.08&longitude=14.44&current=temperature_2m',true); x2.send(); } catch(e){ p('XHR https ERROR: '+e); }
+
+// test 3: JSONP-style (skript tag)
+window.cb = function(d){ p('JSONP OK: ' + JSON.stringify(d).substring(0,80)); };
+var s = document.createElement('script');
+s.src = 'https://api.open-meteo.com/v1/forecast?latitude=50.08&longitude=14.44&current=temperature_2m&callback=cb';
+s.onerror = function(){ p('JSONP FAIL (nepodporuje callback)'); };
+document.head.appendChild(s);
+
+setTimeout(function(){ p('--- konec testu po 10s ---'); }, 10000);
+</script>
+</body></html>
