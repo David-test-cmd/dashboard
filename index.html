@@ -214,15 +214,16 @@ var MNAMES = ["ledna","unora","brezna","dubna","kvetna","cervna","cervence","srp
 // WMO weather code -> ikona + popis
 function wmo(c) {
   var m = {
-    0:["☀️","Jasno"], 1:["🌤️","Skoro jasno"], 2:["⛅","Polojasno"],
-    3:["☁️","Zatazeno"], 45:["🌫️","Mlha"], 48:["🌫️","Mlha"],
-    51:["🌦️","Slabe mrholeni"], 53:["🌦️","Mrholeni"], 55:["🌦️","Silne mrholeni"],
-    61:["🌧️","Slaby dest"], 63:["🌧️","Dest"], 65:["🌧️","Silny dest"],
-    71:["🌨️","Slabe snezeni"], 73:["🌨️","Snezeni"], 75:["❄️","Silne snezeni"],
-    80:["🌦️","Prehanky"], 81:["🌧️","Prehanky"], 82:["⛈️","Silne prehanky"],
-    95:["⛈️","Bourka"], 96:["⛈️","Bourka s krupobitim"], 99:["⛈️","Silna bourka"]
+    // ponytail: bez variantniho selektoru (U+FE0F) - stary Lightning ho nevykresli
+    0:["☀","Jasno"], 1:["⛅","Skoro jasno"], 2:["⛅","Polojasno"],
+    3:["☁","Zatazeno"], 45:["☁","Mlha"], 48:["☁","Mlha"],
+    51:["🌧","Slabe mrholeni"], 53:["🌧","Mrholeni"], 55:["🌧","Silne mrholeni"],
+    61:["🌧","Slaby dest"], 63:["🌧","Dest"], 65:["🌧","Silny dest"],
+    71:["❄","Slabe snezeni"], 73:["❄","Snezeni"], 75:["❄","Silne snezeni"],
+    80:["🌧","Prehanky"], 81:["🌧","Prehanky"], 82:["⛈","Silne prehanky"],
+    95:["⛈","Bourka"], 96:["⛈","Bourka s krupobitim"], 99:["⛈","Silna bourka"]
   };
-  return m[c] || ["☁️","?"];
+  return m[c] || ["☁","?"];
 }
 
 function pad(n){ return (n<10?"0":"")+n; }
