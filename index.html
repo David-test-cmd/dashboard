@@ -212,18 +212,40 @@ var DNAMES = ["nedele","pondeli","utery","streda","ctvrtek","patek","sobota"];
 var MNAMES = ["ledna","unora","brezna","dubna","kvetna","cervna","cervence","srpna","zari","rijna","listopadu","prosince"];
 
 // WMO weather code -> ikona + popis
+// ponytail: kreslime vlastni SVG. Tablet nema glyph pro dest/snih/bourku
+// v zadnem fontu (AndroidEmoji i NotoColorEmoji jeji kod chybi), takze
+// emoji ikony by u deste/snezeni/bourky zmizely.
+var IC = "fill='none' stroke='#8ab4f8' stroke-width='2' stroke-linecap='round'";
+function svg(inner, vb) {
+  return "<svg viewBox='0 0 "+(vb||24)+" 24' width='1em' height='1em' "+
+    "style='vertical-align:-0.15em' xmlns='http://www.w3.org/2000/svg'>"+inner+"</svg>";
+}
+var CLOUD = "<path "+IC+" d='M7 18h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.2A3.4 3.4 0 0 0 7 18z'/>";
+var SUN = "<circle "+IC+" cx='12' cy='12' r='4.2'/>"+
+  "<path "+IC+" d='M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4'/>";
 function wmo(c) {
   var m = {
-    // ponytail: bez variantniho selektoru (U+FE0F) - stary Lightning ho nevykresli
-    0:["☀","Jasno"], 1:["⛅","Skoro jasno"], 2:["⛅","Polojasno"],
-    3:["☁","Zatazeno"], 45:["☁","Mlha"], 48:["☁","Mlha"],
-    51:["🌧","Slabe mrholeni"], 53:["🌧","Mrholeni"], 55:["🌧","Silne mrholeni"],
-    61:["🌧","Slaby dest"], 63:["🌧","Dest"], 65:["🌧","Silny dest"],
-    71:["❄","Slabe snezeni"], 73:["❄","Snezeni"], 75:["❄","Silne snezeni"],
-    80:["🌧","Prehanky"], 81:["🌧","Prehanky"], 82:["⛈","Silne prehanky"],
-    95:["⛈","Bourka"], 96:["⛈","Bourka s krupobitim"], 99:["⛈","Silna bourka"]
+    0:[svg(SUN),"Jasno"], 1:[svg(SUN+"<g transform='translate(4 3) scale(0.72)'>"+CLOUD+"</g>"),"Skoro jasno"],
+    2:[svg(SUN+"<g transform='translate(4 3) scale(0.72)'>"+CLOUD+"</g>"),"Polojasno"],
+    3:[svg(CLOUD),"Zatazeno"], 45:[svg("<path "+IC+" d='M4 8h16M4 13h16M4 18h16'/>"),"Mlha"],
+    48:[svg("<path "+IC+" d='M4 8h16M4 13h16M4 18h16'/>"),"Mlha"],
+    51:[svg(CLOUD+"<path "+IC+" d='M9 20v1M13 20v1M17 20v1'/>"),"Slabe mrholeni"],
+    53:[svg(CLOUD+"<path "+IC+" d='M9 20v1M13 20v1M17 20v1'/>"),"Mrholeni"],
+    55:[svg(CLOUD+"<path "+IC+" d='M9 19v2M13 19v2M17 19v2'/>"),"Silne mrholeni"],
+    61:[svg(CLOUD+"<path "+IC+" d='M9 19v2M13 19v2M17 19v2'/>"),"Slaby dest"],
+    63:[svg(CLOUD+"<path "+IC+" d='M9 19v2M13 19v2M17 19v2'/>"),"Dest"],
+    65:[svg(CLOUD+"<path "+IC+" d='M9 19v2M13 19v2M17 19v2'/>"),"Silny dest"],
+    71:[svg(CLOUD+"<path "+IC+" d='M9 20h.01M13 18h.01M17 20h.01'/>"),"Slabe snezeni"],
+    73:[svg(CLOUD+"<path "+IC+" d='M9 20h.01M13 18h.01M17 20h.01'/>"),"Snezeni"],
+    75:[svg(CLOUD+"<path "+IC+" d='M9 20h.01M13 18h.01M17 20h.01'/>"),"Silne snezeni"],
+    80:[svg(CLOUD+"<path "+IC+" d='M9 19v2M13 19v2M17 19v2'/>"),"Prehanky"],
+    81:[svg(CLOUD+"<path "+IC+" d='M9 19v2M13 19v2M17 19v2'/>"),"Prehanky"],
+    82:[svg(CLOUD+"<path "+IC+" d='M13 4l-4 5h3l-1 5 4-6h-3l1-4z'/>"),"Silne prehanky"],
+    95:[svg(CLOUD+"<path "+IC+" d='M13 4l-4 5h3l-1 5 4-6h-3l1-4z'/>"),"Bourka"],
+    96:[svg(CLOUD+"<path "+IC+" d='M13 4l-4 5h3l-1 5 4-6h-3l1-4z'/>"),"Bourka s krupobitim"],
+    99:[svg(CLOUD+"<path "+IC+" d='M13 4l-4 5h3l-1 5 4-6h-3l1-4z'/>"),"Silna bourka"]
   };
-  return m[c] || ["☁","?"];
+  return m[c] || [svg(CLOUD),"?"];
 }
 
 function pad(n){ return (n<10?"0":"")+n; }
