@@ -212,38 +212,64 @@ var DNAMES = ["nedele","pondeli","utery","streda","ctvrtek","patek","sobota"];
 var MNAMES = ["ledna","unora","brezna","dubna","kvetna","cervna","cervence","srpna","zari","rijna","listopadu","prosince"];
 
 // WMO weather code -> ikona + popis
-// ponytail: kreslime vlastni SVG. Tablet nema glyph pro dest/snih/bourku
+// ponytail: kreslime vlastni barevne SVG. Tablet nema glyph pro dest/snih/bourku
 // v zadnem fontu (AndroidEmoji i NotoColorEmoji jeji kod chybi), takze
 // emoji ikony by u deste/snezeni/bourky zmizely.
-var IC = "fill='none' stroke='#8ab4f8' stroke-width='2' stroke-linecap='round'";
-function svg(inner, vb) {
-  return "<svg viewBox='0 0 "+(vb||24)+" 24' width='1em' height='1em' "+
+var SUN_C = "#f5b301", CLOUD_C = "#95a5b8", CLOUD_D = "#6f7d8c",
+    RAIN_C = "#4d9de0", SNOW_C = "#cfe3f5", BOLT_C = "#f5b301", FOG_C = "#8b949e";
+function svg(inner) {
+  return "<svg viewBox='0 0 24 24' width='1em' height='1em' "+
     "style='vertical-align:-0.15em' xmlns='http://www.w3.org/2000/svg'>"+inner+"</svg>";
 }
-var CLOUD = "<path "+IC+" d='M7 18h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.2A3.4 3.4 0 0 0 7 18z'/>";
-var SUN = "<circle "+IC+" cx='12' cy='12' r='4.2'/>"+
-  "<path "+IC+" d='M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4'/>";
+// slunce s paprsky
+function sun(scale, dx, dy) {
+  var t = (scale && scale !== 1) ? "<g transform='translate("+dx+" "+dy+") scale("+scale+")'>" : "<g>";
+  return t+"<circle cx='12' cy='12' r='5' fill='"+SUN_C+"'/>"+
+    "<g stroke='"+SUN_C+"' stroke-width='2' stroke-linecap='round'>"+
+    "<path d='M12 1.5v2.5M12 20v2.5M1.5 12h2.5M20 12h2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M19.4 4.6l-1.8 1.8M6.4 17.6l-1.8 1.8'/></g></g>";
+}
+// mrak: horni svetly + spodni tmavy oblouk = plasticita
+var CLOUD = "<path d='M6.5 19h11a4.2 4.2 0 0 0 .6-8.35 6 6 0 0 0-11.5-.7A4.3 4.3 0 0 0 6.5 19z' fill='"+CLOUD_C+"'/>"+
+  "<path d='M6.5 19h11a4.2 4.2 0 0 0 4.05-3.1H6.5z' fill='"+CLOUD_D+"' opacity='.55'/>";
+// kapky deste
+function rain(n) {
+  var x = [8.5, 12, 15.5], d = "";
+  for (var i = 0; i < n; i++)
+    d += "<path d='M"+x[i]+" 19.5v2.2' stroke='"+RAIN_C+"' stroke-width='2.2' stroke-linecap='round'/>";
+  return "<g>"+d+"</g>";
+}
+// vlocky
+function snow() {
+  return "<g stroke='"+SNOW_C+"' stroke-width='2' stroke-linecap='round'>"+
+    "<path d='M8.5 19.5v2.3M12 19.5v2.3M15.5 19.5v2.3'/></g>";
+}
+// blesk
+var BOLT = "<path d='M14 13.5l-4 6.5h3l-1.2 4.5 5.2-6.8h-3l1.4-4.2z' fill='"+BOLT_C+"' stroke='#0d1117' stroke-width='.6'/>";
+// mlha
+var FOG = "<g stroke='"+FOG_C+"' stroke-width='2.2' stroke-linecap='round'>"+
+  "<path d='M4 8h16M4 12.5h16M4 17h16'/></g>";
 function wmo(c) {
   var m = {
-    0:[svg(SUN),"Jasno"], 1:[svg(SUN+"<g transform='translate(4 3) scale(0.72)'>"+CLOUD+"</g>"),"Skoro jasno"],
-    2:[svg(SUN+"<g transform='translate(4 3) scale(0.72)'>"+CLOUD+"</g>"),"Polojasno"],
-    3:[svg(CLOUD),"Zatazeno"], 45:[svg("<path "+IC+" d='M4 8h16M4 13h16M4 18h16'/>"),"Mlha"],
-    48:[svg("<path "+IC+" d='M4 8h16M4 13h16M4 18h16'/>"),"Mlha"],
-    51:[svg(CLOUD+"<path "+IC+" d='M9 20v1M13 20v1M17 20v1'/>"),"Slabe mrholeni"],
-    53:[svg(CLOUD+"<path "+IC+" d='M9 20v1M13 20v1M17 20v1'/>"),"Mrholeni"],
-    55:[svg(CLOUD+"<path "+IC+" d='M9 19v2M13 19v2M17 19v2'/>"),"Silne mrholeni"],
-    61:[svg(CLOUD+"<path "+IC+" d='M9 19v2M13 19v2M17 19v2'/>"),"Slaby dest"],
-    63:[svg(CLOUD+"<path "+IC+" d='M9 19v2M13 19v2M17 19v2'/>"),"Dest"],
-    65:[svg(CLOUD+"<path "+IC+" d='M9 19v2M13 19v2M17 19v2'/>"),"Silny dest"],
-    71:[svg(CLOUD+"<path "+IC+" d='M9 20h.01M13 18h.01M17 20h.01'/>"),"Slabe snezeni"],
-    73:[svg(CLOUD+"<path "+IC+" d='M9 20h.01M13 18h.01M17 20h.01'/>"),"Snezeni"],
-    75:[svg(CLOUD+"<path "+IC+" d='M9 20h.01M13 18h.01M17 20h.01'/>"),"Silne snezeni"],
-    80:[svg(CLOUD+"<path "+IC+" d='M9 19v2M13 19v2M17 19v2'/>"),"Prehanky"],
-    81:[svg(CLOUD+"<path "+IC+" d='M9 19v2M13 19v2M17 19v2'/>"),"Prehanky"],
-    82:[svg(CLOUD+"<path "+IC+" d='M13 4l-4 5h3l-1 5 4-6h-3l1-4z'/>"),"Silne prehanky"],
-    95:[svg(CLOUD+"<path "+IC+" d='M13 4l-4 5h3l-1 5 4-6h-3l1-4z'/>"),"Bourka"],
-    96:[svg(CLOUD+"<path "+IC+" d='M13 4l-4 5h3l-1 5 4-6h-3l1-4z'/>"),"Bourka s krupobitim"],
-    99:[svg(CLOUD+"<path "+IC+" d='M13 4l-4 5h3l-1 5 4-6h-3l1-4z'/>"),"Silna bourka"]
+    0:[svg(sun(1)),"Jasno"],
+    1:[svg("<g transform='translate(2 -2) scale(0.7)'>"+sun(1)+"</g>"+CLOUD),"Skoro jasno"],
+    2:[svg("<g transform='translate(2 -2) scale(0.7)'>"+sun(1)+"</g>"+CLOUD),"Polojasno"],
+    3:[svg(CLOUD),"Zatazeno"],
+    45:[svg(FOG),"Mlha"], 48:[svg(FOG),"Mlha"],
+    51:[svg(CLOUD+rain(3)),"Slabe mrholeni"],
+    53:[svg(CLOUD+rain(3)),"Mrholeni"],
+    55:[svg(CLOUD+rain(3)),"Silne mrholeni"],
+    61:[svg(CLOUD+rain(3)),"Slaby dest"],
+    63:[svg(CLOUD+rain(3)),"Dest"],
+    65:[svg(CLOUD+rain(3)),"Silny dest"],
+    71:[svg(CLOUD+snow()),"Slabe snezeni"],
+    73:[svg(CLOUD+snow()),"Snezeni"],
+    75:[svg(CLOUD+snow()),"Silne snezeni"],
+    80:[svg(CLOUD+rain(3)),"Prehanky"],
+    81:[svg(CLOUD+rain(3)),"Prehanky"],
+    82:[svg(CLOUD+BOLT),"Silne prehanky"],
+    95:[svg(CLOUD+BOLT),"Bourka"],
+    96:[svg(CLOUD+BOLT),"Bourka s krupobitim"],
+    99:[svg(CLOUD+BOLT),"Silna bourka"]
   };
   return m[c] || [svg(CLOUD),"?"];
 }
